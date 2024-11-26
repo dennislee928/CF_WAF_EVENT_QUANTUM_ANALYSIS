@@ -180,4 +180,5 @@ def process_security_center_data():
 
 # Main Entry
 if __name__ == '__main__':
+    debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
     app.run(debug=debug)
