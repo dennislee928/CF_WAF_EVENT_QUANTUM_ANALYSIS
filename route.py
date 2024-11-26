@@ -3,6 +3,9 @@ from qiskit import QuantumCircuit, Aer, execute
 import numpy as np
 from collections import Counter
 ##
+from qiskit import QuantumCircuit, Aer, execute
+from qiskit.visualization import plot_histogram
+##
 from flask import Flask, jsonify
 from datetime import datetime
 import requests
@@ -60,3 +63,52 @@ def process_security_center_data():
     statevector = result.get_statevector()
 
     return jsonify({'processed_data': statevector.tolist()})
+
+##
+def preprocess_data(data):
+    issues = data.get("result", {}).get("issues", [])
+    if not issues:
+        return [], []
+
+    # Extract issue classes and severities
+    issue_classes = [issue["issue_class"] for issue in issues]
+    severities = [issue["severity"] for issue in issues]
+
+    # Count occurrences of each issue class
+    class_counts = Counter(issue_classes)
+    severity_mapping = {"Low": 1, "Moderate": 2, "Critical": 3}
+
+    # Map severities to numerical values
+    severities_encoded = [severity_mapping[severity] for severity in severities]
+
+    return list(class_counts.values()), severities_encoded
+##
+def create_circuit(class_counts, severities):
+    # Determine the number of qubits required
+    n_qubits = max(len(class_counts), len(severities))
+
+    # Initialize quantum circuit
+    qc = QuantumCircuit(n_qubits)
+
+    # Encode class counts into quantum states
+    for i, count in enumerate(class_counts):
+        angle = 2 * np.pi * (count / max(class_counts))  # Normalize and convert to rotation angle
+        qc.ry(angle, i)
+
+    # Encode severities as weighted rotations
+    for i, severity in enumerate(severities):
+        angle = np.pi * (severity / max(severities))  # Normalize and convert to rotation angle
+        qc.rx(angle, i)
+
+    # Add entanglement to correlate features
+    for i in range(n_qubits - 1):
+        qc.cx(i, i + 1)
+
+    return qc
+
+##
+def simulate_circuit(qc):
+    backend = Aer.get_backend('statevector_simulator')
+    result = execute(qc, backend).result()
+    statevector = result.get_statevector()
+    return statevector
