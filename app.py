@@ -176,6 +176,12 @@ def process_security_center_data():
         'class_counts': class_counts,
         'severities': severities
     })
+##For confirming homepage
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"message": "Welcome to the Security Center Data Machine API"}), 200
+
+
 
 
 # Main Entry
