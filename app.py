@@ -1,7 +1,7 @@
 import logging
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 from datetime import datetime
-import requests
+
 import os
 from collections import Counter
 import numpy as np
@@ -55,7 +55,7 @@ def fetch_security_center_data():
         "per_page": 100,
     }
     ##See response
-    response = requests.get(url, headers=headers, params=params)
+    response = request.get(url, headers=headers, params=params)
     print("Response Status Code:", response.status_code)
     print("Response Body:", response.text)
    
@@ -137,7 +137,7 @@ def post_to_ibm_quantum_lab(qasm_file):
         "shots": 1024,
     }
 
-    response = requests.post(url, json=payload, headers=headers)
+    response = request.post(url, json=payload, headers=headers)
     if response.status_code == 200:
         print("Job submitted successfully:", response.json())
     else:
