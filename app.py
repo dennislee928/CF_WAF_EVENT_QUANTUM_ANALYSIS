@@ -159,20 +159,8 @@ def post_to_ibm_quantum_lab(qasm_file, backend="ibm_brisbane"):
         raise
 
 
-# Flask Routes
 
-@app.route('/fetch_waf_data_endpoint', methods=['GET'])
-def fetch_waf_data_endpoint():
-    try:
-        data = fetch_security_center_data()
-        if data:
-            issue_count = len(data.get('result', {}).get('issues', []))
-            logger.info(f"Fetched Security Center Data at {datetime.now()}: {issue_count} issues")
-            return jsonify(data), 200
-        return jsonify({"error": "No data found"}), 404
-    except Exception as e:
-        logger.exception("An error occurred while fetching WAF data.")
-        return jsonify({"error": str(e)}), 500
+
 
 
 
