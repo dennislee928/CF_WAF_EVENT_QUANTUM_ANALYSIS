@@ -22,17 +22,22 @@ app = Flask(__name__)
 # Load environment variables
 load_dotenv()
 # Retrieve the token from the environment
-token = os.getenv('IBM_QUANTUM_TOKEN')
+token = os.getenv('IBM_QUANTUM_API_TOKEN')
 if not token:
-    logger.error("IBM_QUANTUM_TOKEN is not set in environment variables.")
-    raise EnvironmentError("IBM_QUANTUM_TOKEN is required but not set in the environment variables.")
+    logger.error("IBM_QUANTUM_API_TOKEN is not set in environment variables.")
+    raise EnvironmentError("IBM_QUANTUM_API_TOKEN is required but not set in the environment variables.")
 
 # Initialize the service
-service = QiskitRuntimeService(
-    channel='ibm_quantum',
-    instance='ibm-q/open/main',
-    token=token
-)
+try:
+    service = QiskitRuntimeService(
+        channel='ibm_quantum',
+        instance='ibm-q/open/main',
+        token=token
+    )
+except Exception as e:
+    logger.error("Failed to initialize QiskitRuntimeService: %s", str(e))
+    raise
+
 ##
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -178,4 +183,5 @@ def process_security_center_data():
 
 # Main Entry
 if __name__ == '__main__':
-    app.run(debug=False)
+    debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+app.run(debug=debug)
