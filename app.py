@@ -77,7 +77,9 @@ def preprocess_data(data):
 
     class_counts = Counter(issue_classes)
     severity_mapping = {"Low": 1, "Moderate": 2, "Critical": 3}
+    severities_encoded = [severity_mapping.get(severity, 0) for severity in severities]
 
+  
     try:
         severities_encoded = [severity_mapping[severity] for severity in severities]
     except KeyError as e:
@@ -128,52 +130,50 @@ def create_qasm_file(class_counts, severities, filename="cybersecurity.qasm"):
     return filename
 
 # Post QASM to IBM Quantum Lab
-def post_to_ibm_quantum_lab(qasm_file):
+def post_to_ibm_quantum_lab(qasm_file, backend="ibm_brisbane"):
     api_token = os.getenv("IBM_QUANTUM_API_TOKEN")
     url = "https://quantum-computing.ibm.com/api/v2.0/jobs"
 
-    with open(qasm_file, "r") as f:
-        qasm_code = f.read()
+    try:
+        with open(qasm_file, "r") as f:
+            qasm_code = f.read()
 
-    headers = {
-        "Authorization": f"Bearer {api_token}",
-        "Content-Type": "application/json",
-    }
+        headers = {
+            "Authorization": f"Bearer {api_token}",
+            "Content-Type": "application/json",
+        }
 
-    payload = {
-        "qasm": qasm_code,
-        "backend": "ibm_brisbane ",
-        "shots": 1024,
-    }
+        payload = {
+            "qasm": qasm_code,
+            "backend": backend,
+            "shots": 1024,
+        }
 
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code == 200:
-        print("Job submitted successfully:", response.json())
-    else:
-        print("Failed to submit job:", response.text)
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()  # Raise exception for HTTP errors
+        logger.info(f"Job submitted successfully: {response.json()}")
+        return response.json()
+
+    except Exception as e:
+        logger.error(f"Failed to submit job to IBM Quantum Lab: {e}")
+        raise
+
 
 # Flask Routes
 
 @app.route('/fetch_waf_data_endpoint', methods=['GET'])
 def fetch_waf_data_endpoint():
     try:
-        # Fetch data from the Security Center API
         data = fetch_security_center_data()
-        
-        # If data is successfully fetched
         if data:
             issue_count = len(data.get('result', {}).get('issues', []))
             logger.info(f"Fetched Security Center Data at {datetime.now()}: {issue_count} issues")
             return jsonify(data), 200
-
-        # If no data is returned
-        logger.error("No data returned from the Security Center API.")
-        return jsonify({"error": "Failed to fetch security center data"}), 500
-
+        return jsonify({"error": "No data found"}), 404
     except Exception as e:
-        # Handle any unexpected errors during data fetching
         logger.exception("An error occurred while fetching WAF data.")
         return jsonify({"error": str(e)}), 500
+
 
 
 @app.route('/process-security-center-data', methods=['POST'])
