@@ -78,9 +78,14 @@ def preprocess_data(data):
     class_counts = Counter(issue_classes)
     severity_mapping = {"Low": 1, "Moderate": 2, "Critical": 3}
 
-    severities_encoded = [severity_mapping[severity] for severity in severities]
+    try:
+        severities_encoded = [severity_mapping[severity] for severity in severities]
+    except KeyError as e:
+        logger.error(f"Unexpected severity level: {e}")
+        severities_encoded = []
 
     return list(class_counts.values()), severities_encoded
+
 
 # Create Quantum Circuit
 def create_circuit(class_counts, severities):
@@ -102,10 +107,14 @@ def create_circuit(class_counts, severities):
 
 # Simulate Quantum Circuit
 def simulate_circuit(qc):
-    backend = Aer.get_backend('statevector_simulator')
-    result = execute(qc, backend).result()
-    statevector = result.get_statevector()
-    return statevector
+    try:
+        backend = Aer.get_backend('statevector_simulator')
+        result = execute(qc, backend).result()
+        statevector = result.get_statevector()
+        return statevector
+    except Exception as e:
+        logger.error(f"Failed to simulate circuit: {e}")
+        return []
 
 # Create QASM File
 def create_qasm_file(class_counts, severities, filename="cybersecurity.qasm"):
@@ -137,26 +146,35 @@ def post_to_ibm_quantum_lab(qasm_file):
         "shots": 1024,
     }
 
-    response = request.post(url, json=payload, headers=headers)
+    response = requests.post(url, json=payload, headers=headers)
     if response.status_code == 200:
         print("Job submitted successfully:", response.json())
     else:
         print("Failed to submit job:", response.text)
 
 # Flask Routes
+
 @app.route('/fetch_waf_data_endpoint', methods=['GET'])
 def fetch_waf_data_endpoint():
     try:
+        # Fetch data from the Security Center API
         data = fetch_security_center_data()
+        
+        # If data is successfully fetched
         if data:
-            logger.info(f"Fetched Security Center Data at {datetime.now()}: {len(data.get('result', {}).get('issues', []))} issues")
+            issue_count = len(data.get('result', {}).get('issues', []))
+            logger.info(f"Fetched Security Center Data at {datetime.now()}: {issue_count} issues")
             return jsonify(data), 200
-        else:
-            logger.error("No data returned from the Security Center API.")
-            return jsonify({"error": "Failed to fetch security center data"}), 500
+
+        # If no data is returned
+        logger.error("No data returned from the Security Center API.")
+        return jsonify({"error": "Failed to fetch security center data"}), 500
+
     except Exception as e:
+        # Handle any unexpected errors during data fetching
         logger.exception("An error occurred while fetching WAF data.")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/process-security-center-data', methods=['POST'])
 def process_security_center_data():
