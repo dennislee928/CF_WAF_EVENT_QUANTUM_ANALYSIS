@@ -1,8 +1,9 @@
+import logging
 from flask import Flask, jsonify
 from datetime import datetime
 import requests
 import os
-import logging
+
 from collections import Counter
 import numpy as np
 from qiskit import QuantumCircuit,  execute
@@ -24,6 +25,8 @@ load_dotenv()
 token = os.getenv('IBM_QUANTUM_TOKEN')
 if not token:
     logger.error("IBM_QUANTUM_TOKEN is not set in environment variables.")
+    raise EnvironmentError("IBM_QUANTUM_TOKEN is required but not set in the environment variables.")
+
 # Initialize the service
 service = QiskitRuntimeService(
     channel='ibm_quantum',
