@@ -6,6 +6,13 @@ from collections import Counter
 from qiskit import QuantumCircuit, Aer, execute
 from qiskit.visualization import plot_histogram
 ##
+from qiskit_machine_learning.neural_networks import OpflowQNN
+from qiskit_machine_learning.algorithms import NeuralNetworkClassifier
+from qiskit.opflow import Z, I, StateFn, PauliSumOp
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+##
 from flask import Flask, jsonify
 from datetime import datetime
 import requests
@@ -112,3 +119,66 @@ def simulate_circuit(qc):
     result = execute(qc, backend).result()
     statevector = result.get_statevector()
     return statevector
+
+##
+def create_qasm_file(class_counts, severities, filename="cybersecurity.qasm"):
+    qc = create_circuit(class_counts, severities)  # Reuse your quantum circuit creation function
+    qasm_data = qc.qasm()
+
+    # Save the QASM data to a file
+    with open(filename, "w") as f:
+        f.write(qasm_data)
+
+    print(f"QASM file created: {filename}")
+    return filename
+
+##
+def post_to_ibm_quantum_lab(qasm_file):
+    # Replace with your IBM Quantum API token
+    api_token = os.getenv("IBM_QUANTUM_API_TOKEN")
+    url = "https://quantum-computing.ibm.com/api/v2.0/jobs"
+
+    # Read the QASM file
+    with open(qasm_file, "r") as f:
+        qasm_code = f.read()
+
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "application/json",
+    }
+
+    # Prepare payload
+    payload = {
+        "qasm": qasm_code,
+        "backend": "ibmq_qasm_simulator",  # Specify the IBM backend
+        "shots": 1024,  # Number of shots for the job
+    }
+
+    # Submit job
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 200:
+        print("Job submitted successfully:", response.json())
+    else:
+        print("Failed to submit job:", response.text)
+##
+def post_processed_data(data):
+    url = "https://quantum-computing.ibm.com/api/v2.0/jobs"
+    api_token = os.getenv("IBM_QUANTUM_API_TOKEN")
+
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "data": data,
+        "backend": "ibmq_qasm_simulator",  # Specify backend
+        "shots": 1024,
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 200:
+        print("Data submitted successfully:", response.json())
+    else:
+        print("Failed to submit data:", response.text)
+
