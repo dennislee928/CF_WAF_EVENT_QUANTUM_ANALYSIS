@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from datetime import datetime
 import requests
 import os
+import logging
 from collections import Counter
 import numpy as np
 from qiskit import QuantumCircuit, Aer, execute
@@ -10,8 +11,26 @@ from qiskit_machine_learning.algorithms import NeuralNetworkClassifier
 from qiskit.opflow import Z, I, PauliSumOp
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from qiskit_ibm_runtime import QiskitRuntimeService
+
+from dotenv import load_dotenv
 
 app = Flask(__name__)
+
+# Load environment variables
+load_dotenv()
+# Retrieve the token from the environment
+token = os.getenv('IBM_QUANTUM_TOKEN')
+# Initialize the service
+service = QiskitRuntimeService(
+    channel='ibm_quantum',
+    instance='ibm-q/open/main',
+    token=token
+)
+##
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 # Fetch Security Center Data
 def fetch_security_center_data():
@@ -29,6 +48,7 @@ def fetch_security_center_data():
     if response.status_code == 200:
         return response.json()
     else:
+        logger.error("Failed to fetch security center data")
         print("Failed to fetch security center data:", response.text)
         return None
 
@@ -117,6 +137,7 @@ def post_to_ibm_quantum_lab(qasm_file):
 def fetch_waf_data_endpoint():
     data = fetch_security_center_data()
     if data:
+        logger.info(f"Fetched Security Center Data at {datetime.now()}: {len(data.get('result', {}).get('issues', []))} issues")
         print(f"Fetched Security Center Data at {datetime.now()}: {len(data.get('result', {}).get('issues', []))} issues")
         return jsonify(data)
     else:
@@ -146,4 +167,5 @@ def process_security_center_data():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=os.getenv('FLASK_DEBUG', 'false').lower() == 'true')
+
