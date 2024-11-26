@@ -22,6 +22,8 @@ app = Flask(__name__)
 load_dotenv()
 # Retrieve the token from the environment
 token = os.getenv('IBM_QUANTUM_TOKEN')
+if not token:
+    logger.error("IBM_QUANTUM_TOKEN is not set in environment variables.")
 # Initialize the service
 service = QiskitRuntimeService(
     channel='ibm_quantum',
