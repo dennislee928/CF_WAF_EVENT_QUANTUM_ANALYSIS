@@ -5,7 +5,8 @@ import os
 import logging
 from collections import Counter
 import numpy as np
-from qiskit import QuantumCircuit, Aer, execute
+from qiskit import QuantumCircuit,  execute
+from qiskit_aer import Aer
 from qiskit_machine_learning.neural_networks import OpflowQNN
 from qiskit_machine_learning.algorithms import NeuralNetworkClassifier
 from qiskit.opflow import Z, I, PauliSumOp
