@@ -102,7 +102,7 @@ def post_to_ibm_quantum_lab(qasm_file):
 
     payload = {
         "qasm": qasm_code,
-        "backend": "ibmq_qasm_simulator",
+        "backend": "ibm_brisbane ",
         "shots": 1024,
     }
 
