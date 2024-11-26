@@ -133,15 +133,19 @@ def post_to_ibm_quantum_lab(qasm_file):
         print("Failed to submit job:", response.text)
 
 # Flask Routes
-@app.route('/fetch_waf_data', methods=['GET'])
+@app.route('/fetch_waf_data_endpoint', methods=['GET'])
 def fetch_waf_data_endpoint():
+ try:
     data = fetch_security_center_data()
     if data:
-        logger.info(f"Fetched Security Center Data at {datetime.now()}: {len(data.get('result', {}).get('issues', []))} issues")
-        print(f"Fetched Security Center Data at {datetime.now()}: {len(data.get('result', {}).get('issues', []))} issues")
-        return jsonify(data)
+       logger.info(f"Fetched Security Center Data at {datetime.now()}: {len(data.get('result', {}).get('issues', []))} issues")
+       return jsonify(data), 200
     else:
+        logger.error("No data returned from the Security Center API.")
         return jsonify({"error": "Failed to fetch security center data"}), 500
+ except Exception as e:
+        logger.exception("An error occurred while fetching WAF data.")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/process-security-center-data', methods=['POST'])
 def process_security_center_data():
@@ -166,6 +170,6 @@ def process_security_center_data():
         'severities': severities
     })
 
+# Main Entry
 if __name__ == '__main__':
     app.run(debug=os.getenv('FLASK_DEBUG', 'false').lower() == 'true')
-
