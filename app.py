@@ -47,9 +47,9 @@ except Exception as e:
 def fetch_security_center_data():
     url = f"https://api.cloudflare.com/client/v4/accounts/{os.getenv('CLOUDFLARE_ACCOUNT_ID')}/intel/attack-surface-report/issues"
     headers = {
-        "X-Auth-Email": os.getenv("CLOUDFLARE_AUTH_EMAIL"),
-        "X-Auth-Key": os.getenv("CLOUDFLARE_API_KEY"),
-        "Content-Type": "application/json",
+       "X-Auth-Email": os.getenv("CLOUDFLARE_EMAIL"),
+    "X-Auth-Key": os.getenv("CLOUDFLARE_API_KEY"),
+    "Content-Type": "application/json"
     }
     params = {
         "per_page": 100,
@@ -185,10 +185,18 @@ def process_security_center_data():
 def home():
     return jsonify({"message": "Welcome to the Security Center Data Machine API"}), 200
 
+@app.route("/")
+def home():
+    return "Welcome to the app!"
+
+@app.route("/favicon.ico")
+def favicon():
+    return "", 204
+
 
 
 
 # Main Entry
 if __name__ == '__main__':
     debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
-    app.run(debug=debug)
+    app.run(debug=True) 
