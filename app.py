@@ -1,7 +1,7 @@
 import logging
 from flask import Flask, request, jsonify
 from datetime import datetime
-
+import requests
 import os
 from collections import Counter
 import numpy as np
@@ -55,7 +55,7 @@ def fetch_security_center_data():
         "per_page": 100,
     }
     ##See response
-    response = request.get(url, headers=headers, params=params)
+    response = requests.get(url, headers=headers, params=params)
     print("Response Status Code:", response.status_code)
     print("Response Body:", response.text)
    
