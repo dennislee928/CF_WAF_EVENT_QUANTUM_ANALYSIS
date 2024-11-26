@@ -183,11 +183,13 @@ def process_security_center_data():
 ##For confirming homepage
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"message": "Welcome to the Security Center Data Machine API"}), 200
+    if request.headers.get("Accept") == "application/json":
+        # Return a JSON response if the client accepts JSON
+        return jsonify({"message": "Welcome to the Security Center Data Machine API"}), 200
+    else:
+        # Return a plain text response otherwise
+        return "Welcome to the app!"
 
-@app.route("/")
-def home():
-    return "Welcome to the app!"
 
 @app.route("/favicon.ico")
 def favicon():
