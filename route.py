@@ -1,3 +1,5 @@
+from qiskit import QuantumCircuit, Aer, execute
+##
 from flask import Flask, jsonify
 from datetime import datetime
 import requests
