@@ -54,12 +54,16 @@ def fetch_security_center_data():
     params = {
         "per_page": 100,
     }
-
+    ##See response
     response = requests.get(url, headers=headers, params=params)
+    print("Response Status Code:", response.status_code)
+    print("Response Body:", response.text)
+   
+   
     if response.status_code == 200:
         return response.json()
     else:
-        logger.error(f"Failed to fetch security center data: {response.status_code} {response.text}")
+        logger.error(f"Failed to fetch security center data: {response.status_code} {response.text}:CF_ACCOUNT = {os.getenv('CLOUDFLARE_ACCOUNT_ID')}:CF_API_KEY = {os.getenv('CLOUDFLARE_API_KEY')}:CF_AUTH_EMAIL = {os.getenv('CLOUDFLARE_AUTH_EMAIL')}")
         return None
 
 # Preprocess Data
