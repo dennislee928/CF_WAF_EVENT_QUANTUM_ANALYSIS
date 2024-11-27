@@ -200,10 +200,14 @@ def home():
 def favicon():
     return "", 204
 
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "This route is not available"}), 404
+
+
 
 
 
 # Main Entry
 if __name__ == '__main__':
-    debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
-    app.run(debug=True) 
+    app.run(debug=debug)  # Use the globally defined debug variable
