@@ -45,31 +45,32 @@ except Exception as e:
 
 # Fetch Security Center Data
 def fetch_security_center_data():
+    logger.info("Fetching security center data from Cloudflare")
     url = f"https://api.cloudflare.com/client/v4/accounts/{os.getenv('CLOUDFLARE_ACCOUNT_ID')}/intel/attack-surface-report/issues"
     headers = {
-       "X-Auth-Email": os.getenv("CLOUDFLARE_EMAIL"),
-    "X-Auth-Key": os.getenv("CLOUDFLARE_API_KEY"),
-    "Content-Type": "application/json"
+        "X-Auth-Email": os.getenv("CLOUDFLARE_EMAIL"),
+        "X-Auth-Key": os.getenv("CLOUDFLARE_API_KEY"),
+        "Content-Type": "application/json"
     }
-    params = {
-        "per_page": 100,
-    }
-    ##See response
+    params = {"per_page": 100}
+    
     response = requests.get(url, headers=headers, params=params)
-    print("Response Status Code:", response.status_code)
-    print("Response Body:", response.text)
-   
-   
+    logger.debug(f"Cloudflare API response status: {response.status_code}")
+    logger.debug(f"Response body: {response.text}")
+
     if response.status_code == 200:
         return response.json()
     else:
-        logger.error(f"Failed to fetch security center data: {response.status_code} {response.text}:CF_ACCOUNT = {os.getenv('CLOUDFLARE_ACCOUNT_ID')}:CF_API_KEY = {os.getenv('CLOUDFLARE_API_KEY')}:CF_AUTH_EMAIL = {os.getenv('CLOUDFLARE_AUTH_EMAIL')}")
+        logger.error(f"Failed to fetch data: {response.status_code} {response.text}")
         return None
+
 
 # Preprocess Data
 def preprocess_data(data):
+    logger.info("Preprocessing fetched data")
     issues = data.get("result", {}).get("issues", [])
     if not issues:
+        logger.warning("No issues found in the data")
         return [], []
 
     issue_classes = [issue["issue_class"] for issue in issues]
@@ -79,18 +80,16 @@ def preprocess_data(data):
     severity_mapping = {"Low": 1, "Moderate": 2, "Critical": 3}
     severities_encoded = [severity_mapping.get(severity, 0) for severity in severities]
 
-  
-    try:
-        severities_encoded = [severity_mapping[severity] for severity in severities]
-    except KeyError as e:
-        logger.error(f"Unexpected severity level: {e}")
-        severities_encoded = []
+    logger.debug(f"Class counts: {class_counts}")
+    logger.debug(f"Severities encoded: {severities_encoded}")
 
     return list(class_counts.values()), severities_encoded
 
 
+
 # Create Quantum Circuit
 def create_circuit(class_counts, severities):
+    logger.info("Creating quantum circuit")
     n_qubits = max(len(class_counts), len(severities))
     qc = QuantumCircuit(n_qubits)
 
@@ -105,32 +104,40 @@ def create_circuit(class_counts, severities):
     for i in range(n_qubits - 1):
         qc.cx(i, i + 1)
 
+    logger.debug(f"Quantum circuit created with {n_qubits} qubits")
     return qc
+
 
 # Simulate Quantum Circuit
 def simulate_circuit(qc):
+    logger.info("Simulating quantum circuit")
     try:
         backend = Aer.get_backend('statevector_simulator')
         result = execute(qc, backend).result()
         statevector = result.get_statevector()
+        logger.debug(f"Simulation statevector: {statevector}")
         return statevector
     except Exception as e:
-        logger.error(f"Failed to simulate circuit: {e}")
+        logger.error(f"Simulation failed: {e}")
         return []
+
 
 # Create QASM File
 def create_qasm_file(class_counts, severities, filename="cybersecurity.qasm"):
+    logger.info("Creating QASM file")
     qc = create_circuit(class_counts, severities)
     qasm_data = qc.qasm()
 
     with open(filename, "w") as f:
         f.write(qasm_data)
 
-    print(f"QASM file created: {filename}")
+    logger.info(f"QASM file created: {filename}")
     return filename
+
 
 # Post QASM to IBM Quantum Lab
 def post_to_ibm_quantum_lab(qasm_file, backend="ibm_brisbane"):
+    logger.info("Posting QASM file to IBM Quantum Lab")
     api_token = os.getenv("IBM_QUANTUM_API_TOKEN")
     url = "https://quantum-computing.ibm.com/api/v2.0/jobs"
 
@@ -150,7 +157,7 @@ def post_to_ibm_quantum_lab(qasm_file, backend="ibm_brisbane"):
         }
 
         response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()  # Raise exception for HTTP errors
+        response.raise_for_status()
         logger.info(f"Job submitted successfully: {response.json()}")
         return response.json()
 
@@ -164,11 +171,15 @@ def post_to_ibm_quantum_lab(qasm_file, backend="ibm_brisbane"):
 
 
 
+
 @app.route('/process-security-center-data', methods=['POST'])
 def process_security_center_data():
+    logger.info("Endpoint /process-security-center-data triggered")
     data = fetch_security_center_data()
     if not data:
+        logger.warning("No security center data fetched")
         return jsonify({"error": "No security center data to process"}), 400
+
 
     # Preprocess Data
     class_counts, severities = preprocess_data(data)
